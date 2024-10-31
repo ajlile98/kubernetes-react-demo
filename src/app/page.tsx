@@ -1,6 +1,23 @@
 import Image from "next/image";
+import {KubeConfig, CoreV1Api, V1PodList} from '@kubernetes/client-node'
 
-export default function Home() {
+const kc = new KubeConfig();
+kc.loadFromDefault();
+const k8sApi = kc.makeApiClient(CoreV1Api);
+
+const getPods = async (namespace: string = 'default') => {
+    try {
+        const podsRes = await k8sApi.listNamespacedPod(namespace);
+        // console.log(podsRes.body);
+        return podsRes.body
+    } catch (err) {
+        console.error(err);
+        throw err
+    }
+};
+
+export default async function Home() {
+  let podList = await getPods('kube-system')
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
@@ -20,7 +37,8 @@ export default function Home() {
             </code>
             .
           </li>
-          <li>Save and see your changes instantly.</li>
+          <li>Goofy Goober.</li>
+          {podList.items.map(_=><li>{JSON.stringify(_.metadata?.name)}</li>)}
         </ol>
 
         <div className="flex gap-4 items-center flex-col sm:flex-row">
