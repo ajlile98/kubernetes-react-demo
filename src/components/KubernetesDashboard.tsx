@@ -1,41 +1,42 @@
-import { KubeConfig, CoreV1Api } from '@kubernetes/client-node'
-import { NamespaceDropdown } from './NamespaceDropdown';
+'use client';
+import { useEffect, useState } from 'react';
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@nextui-org/react";
 
-const kc = new KubeConfig();
-kc.loadFromDefault();
-const k8sApi = kc.makeApiClient(CoreV1Api);
+export const KubernetesDashboard = () => {
+    const [namespaces, setNamespaces] = useState([])
+    const [namespace, setNamespace] = useState('default')
+    const [pods, setPods] = useState([])
 
-const getPods = async (namespace: string = 'default') => {
-    try {
-        const res = await k8sApi.listNamespacedPod(namespace);
-        // console.log(podsRes.body);
-        return res.body
-    } catch (err) {
-        console.error(err);
-        throw err
-    }
-};
-
-const getNamespaces = async () => {
-    try {
-        const res = await k8sApi.listNamespace();
-        // console.log(res.body);
-        return res.body
-    } catch (err) {
-        console.error(err);
-        throw err
-    }
-};
-
-
-export const KubernetesDashboard = async () => {
-    let namespaces = await getNamespaces()
-    let pods = await getPods('kube-system')
+    useEffect(() => {
+        fetch('/api/namespaces')
+            .then(res => res.json())
+            .then(data => {
+                setNamespaces(data.data.namespaces.items)
+            })
+        }, [])
+    useEffect(() => {
+        fetch(`/api/namespaces/${namespace}/pods`)
+            .then(res => res.json())
+            .then(data => {
+                setPods(data.data.pods.items)
+            })
+        }, [namespace])
     return (
         <div>
-            <NamespaceDropdown namespaces={namespaces.items.map(x=>JSON.stringify(x.metadata?.name))}/>
+            <Dropdown>
+                <DropdownTrigger>
+                    <Button
+                        variant="bordered"
+                    >
+                       Select Namespace 
+                    </Button>
+                </DropdownTrigger>
+                <DropdownMenu aria-label="Static Actions">
+                    {namespaces.map(namespace => <DropdownItem key={namespace?.metadata?.name} onClick={() => setNamespace(namespace?.metadata?.name)}>{namespace?.metadata?.name}</DropdownItem>)}
+                </DropdownMenu>
+            </Dropdown>
             <ul>
-                {pods.items.map(_ => <li>{JSON.stringify(_.metadata?.name)}</li>)}
+                {pods.map(_ => <li>{JSON.stringify(_?.metadata?.name)}</li>)}
             </ul>
         </div>
     )
